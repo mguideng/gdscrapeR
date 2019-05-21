@@ -20,16 +20,18 @@ get_reviews <- function(companyNum) {
   baseurl <- "https://www.glassdoor.com/Reviews/Company-Reviews-"
   sort <- ".htm?sort.sortType=RD&sort.ascending=true"
 
+
   # Nested function for getting max results
   get_maxResults <- function(companyNum) {
     totalReviews <- xml2::read_html(httr::GET(paste(baseurl, companyNum, sort, sep = ""))) %>%
-      html_nodes(".tightVert.floatLt strong, .margRtSm.margBot.minor") %>%
+      html_nodes(".tightVert.floatLt strong, .margRtSm.margBot.minor, .col-6.my-0 span") %>%
       html_text() %>%
-      sub(" reviews", "", .) %>%
+      gsub("Found |,| reviews", "", .) %>%
       sub(",", "", .) %>%
       as.integer()
     return(ceiling(totalReviews/10))
   }
+
 
   # Message
   Sys.sleep(2)
@@ -37,6 +39,7 @@ get_reviews <- function(companyNum) {
   maxResults <- get_maxResults(companyNum)
   Sys.sleep(6)
   cat(maxResults)
+
 
   # Nested functions to collapse newline (<br>) within pros & cons corpus body of text
   collapse_html_text <- function(x, collapse = "\n", trim = F) {
@@ -52,9 +55,11 @@ get_reviews <- function(companyNum) {
     paste(xml_find_all(x, ".//text()"), collapse = collapse)
   }
 
-  # Nested function to get info (scrape based on CSS selectors pattern)
-  get_selectors <- function(pg, i) {
-    data.frame(rev.date = html_text(html_nodes(pg, ".date.subtle.small, .featuredFlag")),
+
+  # Nested function to get info (scrape based on CSS selectors). A/B Testing versions.
+  get_selectors_A <- function(pg, i) {
+    data.frame(rev.date = html_text(html_nodes(pg, ".date.subtle.small,
+                                               .featuredFlag")),
                rev.sum = html_text(html_nodes(pg, ".reviewLink .summary:not([class*='toggleBodyOff'])")),
                rev.rating = html_attr(html_nodes(pg, ".gdStars.gdRatings.sm .rating .value-title"), "title"),
                rev.title = html_text(html_nodes(pg, "span.authorInfo.tbl.hideHH")),
@@ -67,20 +72,67 @@ get_reviews <- function(companyNum) {
                stringsAsFactors = F)
   }
 
+  get_selectors_B <- function(pg, i) {
+    data.frame(rev.date = html_text(html_nodes(pg, ".date.subtle.small,
+                                               .featuredFlag")),
+               rev.sum = html_text(html_nodes(pg, ".reviewLink .summary:not([class*='toggleBodyOff'])")),
+               rev.rating = html_attr(html_nodes(pg, ".gdStars.gdRatings.sm .rating .value-title"), "title"),
+               rev.title = html_text(html_nodes(pg, ".authorInfo")),
+               rev.pros = collapse_html_text(html_nodes(pg, ".mt-md:nth-child(1) p:nth-child(2)")),
+               rev.cons = collapse_html_text(html_nodes(pg, ".mt-md:nth-child(2) p:nth-child(2)")),
+               rev.helpf = html_text(html_nodes(pg, ".tight")),
+               source.url = paste(baseurl, companyNum, "_P", i, sort, sep = ""),
+               source.link = html_attr(html_nodes(pg, ".reviewLink"), "href"),
+               source.iden = html_attr(html_nodes(pg, ".empReview"), "id"),
+               stringsAsFactors = F)
+  }
+
+
   # Message
   Sys.sleep(3)
   cat("\nStarting")
 
+
   # Nested function to get data frame
-  df <- purrr::map_df(1:maxResults, function(i) {
-    Sys.sleep(sample(seq(3, 8, by = 0.01), 1))  # be polite
+  df <- purrr::map_dfr(1:maxResults, function(i) {
+    #Sys.sleep(sample(seq(2, 5, by = 0.01), 1))  # be polite
     cat(" P", i, sep = "")
     pg <- xml2::read_html(httr::GET(paste(baseurl, companyNum, "_P", i, sort, sep = "")))
-    get_selectors(pg, i)
-  })
+
+    # Try version A and catch error with version B.
+    tryCatch(
+      expr = {
+        get_selectors_A(pg, i)
+        },
+      error = function(e) {
+        tryCatch(
+          expr = {
+            get_selectors_B(pg, i)
+            },
+          error = function(e) {
+            stop("Could not scrape data from website. Try again later. Exiting function.")
+          })
+        })
+    })
+
+
+  # Get Running Count of Stars
+  df$enc1 <- ifelse(df$rev.rating == "1.0", 1, 0)
+  df$enc2 <- ifelse(df$rev.rating == "2.0", 1, 0)
+  df$enc3 <- ifelse(df$rev.rating == "3.0", 1, 0)
+  df$enc4 <- ifelse(df$rev.rating == "4.0", 1, 0)
+  df$enc5 <- ifelse(df$rev.rating == "5.0", 1, 0)
+
+  df$ratingCount1.0 <- with(df, cumsum(enc1))
+  df$ratingCount2.0 <- with(df, cumsum(enc2))
+  df$ratingCount3.0 <- with(df, cumsum(enc3))
+  df$ratingCount4.0 <- with(df, cumsum(enc4))
+  df$ratingCount5.0 <- with(df, cumsum(enc5))
+
+  df <- subset(df, select = -c(enc1, enc2, enc3, enc4, enc5))
+
 
   # Return
   Sys.sleep(3)
   return(data.frame(df))
 }
-
