@@ -58,8 +58,7 @@ get_reviews <- function(companyNum) {
 
   # Nested function to get info (scrape based on CSS selectors). A/B Testing versions.
   get_selectors_A <- function(pg, i) {
-    data.frame(rev.date = html_text(html_nodes(pg, ".date.subtle.small,
-                                               .featuredFlag")),
+    data.frame(rev.date = html_text(html_nodes(pg, ".date.subtle.small, .featuredFlag")),
                rev.sum = html_text(html_nodes(pg, ".reviewLink .summary:not([class*='toggleBodyOff'])")),
                rev.rating = html_attr(html_nodes(pg, ".gdStars.gdRatings.sm .rating .value-title"), "title"),
                rev.title = html_text(html_nodes(pg, "span.authorInfo.tbl.hideHH")),
@@ -73,8 +72,7 @@ get_reviews <- function(companyNum) {
   }
 
   get_selectors_B <- function(pg, i) {
-    data.frame(rev.date = html_text(html_nodes(pg, ".date.subtle.small,
-                                               .featuredFlag")),
+    data.frame(rev.date = html_text(html_nodes(pg, ".date.subtle.small, .featuredFlag")),
                rev.sum = html_text(html_nodes(pg, ".reviewLink .summary:not([class*='toggleBodyOff'])")),
                rev.rating = html_attr(html_nodes(pg, ".gdStars.gdRatings.sm .rating .value-title"), "title"),
                rev.title = html_text(html_nodes(pg, ".authorInfo")),
@@ -95,7 +93,7 @@ get_reviews <- function(companyNum) {
 
   # Nested function to get data frame
   df <- purrr::map_dfr(1:maxResults, function(i) {
-    #Sys.sleep(sample(seq(2, 5, by = 0.01), 1))  # be polite
+    Sys.sleep(sample(seq(2, 5, by = 0.01), 1))  # be polite
     cat(" P", i, sep = "")
     pg <- xml2::read_html(httr::GET(paste(baseurl, companyNum, "_P", i, sort, sep = "")))
 
