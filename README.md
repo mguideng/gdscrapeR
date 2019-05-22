@@ -1,7 +1,7 @@
 gdscrapeR: scrape Glassdoor company reviews in R
 ================
 
-[![GitHub version](https://badge.fury.io/gh/mguideng%2FgdscrapeR.svg)](https://github.com/mguideng/gdscrapeR)
+[![GitHub Release Date](https://img.shields.io/github/release-date/mguideng/gdscrapeR.svg)](https://github.com/mguideng/gdscrapeR)
 
 ABOUT
 -----
@@ -56,33 +56,28 @@ This will scrape the following variables:
 PREP FOR TEXT ANALYTICS
 -----------------------
 
-#### RegEx
+#### RegEx & Export
 
-Use regular expressions to clean and extract additional variables:
-
--   Primary Key - uniquely identify rows 1 to N, sorted from first to last review by date
--   Year - from Date
--   Status - current or former employee
--   Position - e.g., Manager
--   Location - e.g., Hawthorne, CA
+Use regular expressions to clean and extract additional variables and then export:
 
 ``` r
+#### REGEX ####
 # Package
 library(stringr)    # pattern matching functions
 
-# Add: PriKey
+# Add: PriKey (uniquely identify rows 1 to N, sorted from first to last review by date)
 df$rev.pk <- as.numeric(rownames(df))
 
-# Extract: Year, Position, Location, Status
+# Extract: Year, Status, Position, Location 
 df$rev.year <- as.numeric(sub(".*, ","", df$rev.date))
 
 df$rev.stat <- str_match(df$rev.title, ".+?(?= Employee -)")
 
-df$rev.pos <- str_replace_all(df$rev.title, ".* Employee - | in .*", "")
+df$rev.pos <- str_replace_all(df$rev.title, ".* Employee - |\\sin .*|\\s$", "")
 
-df$rev.loc <- sub(".*\\ in ", "", df$rev.title)
+df$rev.loc <- sub(".*\\sin ", "", df$rev.title)
 df$rev.loc <- ifelse(df$rev.loc %in% 
-                       (grep("Former Employee|Current Employee", df$rev.loc, value = T)), 
+                       (grep("Former Employee|Current Employee|^+$", df$rev.loc, value = T)), 
                      "Not Given", df$rev.loc)
 
 # Clean: Pros, Cons, Helpful
@@ -92,7 +87,7 @@ df$rev.cons <- gsub("&amp;", "&", df$rev.cons)
 
 df$rev.helpf <- as.numeric(gsub("\\D", "", df$rev.helpf))
 
-# Export to csv
+#### EXPORT ####
 write.csv(df, "df-results.csv", row.names = F)
 ```
 
