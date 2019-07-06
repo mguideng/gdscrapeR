@@ -10,9 +10,13 @@ gdscrapeR
 
 > The site changes frequently and with a lot of moving parts involved; the package can be expected to change accordingly.
 
+#### \[0.1.2\]
+
+-   bf: Updated selector for `rev.helpf` variable: change '.tight' to '.css-otjqal'
+
 #### \[0.1.1\]
 
--   bf: Updated selector for totalReviews variable: add '.col-6.my-0 span' (issue \#1).
+-   bf: Updated selector for `totalReviews` variable: add '.col-6.my-0 span' (issue \#1).
 
 #### \[0.1.0\]
 

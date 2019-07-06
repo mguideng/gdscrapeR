@@ -2,14 +2,14 @@ Type: Package
 Package: gdscrapeR
 Title: Easily Web Scrape Glassdoor Company Reviews Into a Data Frame
 Description: Tool for scraping company reviews with just one function: `get_reviews()`.
-    Uses the 'rvest' and 'purr' packages to make it easy to scrape company reviews. For learning purposes only.
-Version: 0.1.1
+    Uses the 'rvest' and 'purrr' packages to make it easy to scrape company reviews. For learning purposes only.
+Version: 0.1.2
 Depends:
     R (>= 3.0.1)
 Imports:
     httr,
     magrittr,
-    purrr,
+    purrr (>= 0.2.3),
     rvest,
     xml2
 Suggests:
